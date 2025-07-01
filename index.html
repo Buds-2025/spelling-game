@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英文单词拼写挑战</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                        warning: '#FF7D00',
+                        info: '#86909C',
+                        light: '#F2F3F5',
+                        dark: '#1D2129',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'bounce-in': 'bounceIn 0.5s ease-in-out',
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        bounceIn: {
+                            '0%': { transform: 'scale(0.8)', opacity: '0' },
+                            '70%': { transform: 'scale(1.1)', opacity: '1' },
+                            '100%': { transform: 'scale(1)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .card-shadow {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+            .btn-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+            .typing-indicator {
+                display: inline-flex;
+                align-items: center;
+            }
+            .typing-indicator span {
+                height: 8px;
+                width: 8px;
+                margin: 0 2px;
+                background-color: #165DFF;
+                border-radius: 50%;
+                display: inline-block;
+                animation: typing-bounce 1.4s infinite ease-in-out both;
+            }
+            .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+            .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+            @keyframes typing-bounce {
+                0%, 80%, 100% { transform: scale(0); }
+                40% { transform: scale(1); }
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen flex flex-col">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50 transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-graduation-cap text-primary text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold text-dark">拼写<span class="text-primary">大师</span></h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="helpBtn" class="text-info hover:text-primary transition-colors duration-300">
+                    <i class="fa fa-question-circle text-xl"></i>
+                </button>
+                <button id="settingsBtn" class="text-info hover:text-primary transition-colors duration-300">
+                    <i class="fa fa-cog text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex-grow container mx-auto px-4 py-8 md:py-12">
+        <!-- 游戏信息面板 -->
+        <div class="bg-white rounded-xl shadow-md p-4 md:p-6 mb-8 transform transition-all duration-500" id="gameInfoPanel">
+            <div class="flex flex-wrap justify-between items-center mb-4">
+                <div class="flex items-center space-x-2 mb-2 md:mb-0">
+                    <div class="bg-primary/10 text-primary rounded-full w-10 h-10 flex items-center justify-center">
+                        <i class="fa fa-trophy"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-info">当前等级</p>
+                        <p class="font-bold text-lg" id="currentLevel">初学者</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="bg-success/10 text-success rounded-full w-10 h-10 flex items-center justify-center">
+                            <i class="fa fa-check"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-info">正确率</p>
+                            <p class="font-bold text-lg" id="accuracyRate">0%</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="bg-warning/10 text-warning rounded-full w-10 h-10 flex items-center justify-center">
+                            <i class="fa fa-clock-o"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-info">平均用时</p>
+                            <p class="font-bold text-lg" id="avgTime">0.0秒</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full bg-light rounded-full h-2.5">
+                <div class="bg-primary h-2.5 rounded-full transition-all duration-700" id="progressBar" style="width: 0%"></div>
+            </div>
+            <p class="text-sm text-info mt-2 text-right">
+                进度：<span id="progressText">0/0</span>
+            </p>
+        </div>
+
+        <!-- 游戏区域 -->
+        <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-500 hover:shadow-xl" id="gameContainer">
+            <!-- 游戏开始屏幕 -->
+            <div id="gameStartScreen" class="p-8 text-center">
+                <div class="mb-6">
+                    <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa fa-pencil-square-o text-primary text-4xl"></i>
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-dark mb-2">测试你的拼写能力</h2>
+                    <p class="text-info max-w-md mx-auto">输入正确的单词，提高你的英语水平。每次拼写正确都会显示单词的中文解释和例句。</p>
+                </div>
+                <div class="flex justify-center">
+                    <button id="startBtn" class="bg-primary hover:bg-primary/90 text-white py-3 px-8 rounded-full font-medium btn-hover">
+                        <i class="fa fa-play mr-2"></i>开始游戏
+                    </button>
+                </div>
+            </div>
+
+            <!-- 游戏进行屏幕 -->
+            <div id="gamePlayScreen" class="hidden">
+                <div class="p-6 md:p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="bg-primary/10 text-primary rounded-full w-8 h-8 flex items-center justify-center">
+                                <i class="fa fa-hourglass-half"></i>
+                            </div>
+                            <p class="font-medium" id="timer">0.0秒</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="bg-info/10 text-info rounded-full w-8 h-8 flex items-center justify-center">
+                                <i class="fa fa-list-ol"></i>
+                            </div>
+                            <p class="font-medium" id="roundCounter">第 1 轮</p>
+                        </div>
+                    </div>
+
+                    <div class="text-center mb-8">
+                        <h3 class="text-xl md:text-2xl font-bold text-dark mb-2">请拼写这个单词</h3>
+                        <div class="relative inline-block">
+                            <div id="wordHint" class="text-4xl md:text-5xl font-bold text-primary tracking-wider mb-6">
+                                <!-- 单词提示将在这里显示 -->
+                            </div>
+                            <div id="typingIndicator" class="typing-indicator hidden absolute -bottom-8 left-1/2 transform -translate-x-1/2">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="max-w-md mx-auto">
+                        <div class="relative mb-6">
+                            <input type="text" id="wordInput" class="w-full px-4 py-3 rounded-lg border-2 border-light focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-300 text-lg" placeholder="输入单词..." autocomplete="off">
+                            <button id="submitBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                                提交
+                            </button>
+                        </div>
+
+                        <div id="feedback" class="hidden mb-6 text-center">
+                            <div id="correctFeedback" class="hidden bg-success/10 text-success p-4 rounded-lg animate-fade-in">
+                                <div class="flex items-center justify-center space-x-2 mb-2">
+                                    <i class="fa fa-check-circle text-xl"></i>
+                                    <h4 class="font-bold">拼写正确！</h4>
+                                </div>
+                                <p class="text-sm" id="timeTaken">用时：0.0秒</p>
+                            </div>
+                            <div id="wrongFeedback" class="hidden bg-danger/10 text-danger p-4 rounded-lg animate-fade-in">
+                                <div class="flex items-center justify-center space-x-2 mb-2">
+                                    <i class="fa fa-times-circle text-xl"></i>
+                                    <h4 class="font-bold">拼写错误！</h4>
+                                </div>
+                                <p class="text-sm">正确答案是：<span id="correctAnswer" class="font-medium"></span></p>
+                            </div>
+                        </div>
+
+                        <div id="wordInfo" class="hidden bg-light p-4 rounded-lg animate-slide-up">
+                            <h4 class="font-bold text-dark mb-2">单词释义</h4>
+                            <p id="wordDefinition" class="text-info mb-3">单词释义将在这里显示...</p>
+                            <h4 class="font-bold text-dark mb-2">例句</h4>
+                            <p id="wordExample" class="text-info italic">"例句将在这里显示..."</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-light p-4 flex justify-between items-center">
+                    <button id="skipBtn" class="text-info hover:text-primary transition-colors duration-300">
+                        <i class="fa fa-forward mr-1"></i> 跳过
+                    </button>
+                    <button id="nextBtn" class="hidden bg-primary text-white py-2 px-6 rounded-lg hover:bg-primary/90 transition-colors duration-300 btn-hover">
+                        下一个 <i class="fa fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 游戏结束屏幕 -->
+            <div id="gameEndScreen" class="hidden p-8 text-center">
+                <div class="mb-6">
+                    <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa fa-trophy text-primary text-4xl"></i>
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-dark mb-2">游戏结束！</h2>
+                    <p class="text-info max-w-md mx-auto">恭喜你完成了所有单词的拼写挑战。看看你的表现如何！</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-md mx-auto">
+                    <div class="bg-light p-4 rounded-lg">
+                        <p class="text-info text-sm">总单词数</p>
+                        <p class="text-2xl font-bold text-dark" id="totalWords">0</p>
+                    </div>
+                    <div class="bg-light p-4 rounded-lg">
+                        <p class="text-info text-sm">正确拼写</p>
+                        <p class="text-2xl font-bold text-success" id="correctWords">0</p>
+                    </div>
+                    <div class="bg-light p-4 rounded-lg">
+                        <p class="text-info text-sm">平均用时</p>
+                        <p class="text-2xl font-bold text-primary" id="finalAvgTime">0.0秒</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button id="playAgainBtn" class="bg-primary hover:bg-primary/90 text-white py-3 px-8 rounded-full font-medium btn-hover">
+                        <i class="fa fa-refresh mr-2"></i>再玩一次
+                    </button>
+                    <button id="shareBtn" class="bg-dark hover:bg-dark/90 text-white py-3 px-8 rounded-full font-medium btn-hover">
+                        <i class="fa fa-share-alt mr-2"></i>分享成绩
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2025 拼写大师 | 提升你的英语拼写技能</p>
+            <div class="flex justify-center space-x-4 mt-3">
+                <a href="#" class="text-info hover:text-white transition-colors duration-300">
+                    <i class="fa fa-facebook"></i>
+                </a>
+                <a href="#" class="text-info hover:text-white transition-colors duration-300">
+                    <i class="fa fa-twitter"></i>
+                </a>
+                <a href="#" class="text-info hover:text-white transition-colors duration-300">
+                    <i class="fa fa-instagram"></i>
+                </a>
+                <a href="#" class="text-info hover:text-white transition-colors duration-300">
+                    <i class="fa fa-github"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 帮助模态框 -->
+    <div id="helpModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden animate-fade-in">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-dark">游戏说明</h3>
+                <button id="closeHelpBtn" class="text-info hover:text-dark transition-colors">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-info">
+                <p>1. 点击"开始游戏"按钮开始挑战</p>
+                <p>2. 根据提示拼写英文单词</p>
+                <p>3. 系统会记录你的输入时间和准确性</p>
+                <p>4. 拼写正确后，会显示单词的中文释义和例句</p>
+                <p>5. 完成所有单词后，查看你的最终成绩</p>
+            </div>
+            <div class="mt-6">
+                <button id="gotItBtn" class="w-full bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg transition-colors duration-300">
+                    我知道了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 单词数据库 - 合并简单和困难模式
+        const words = [
+            { word: "apple", definition: "苹果", example: "I like to eat an apple every morning." },
+            { word: "banana", definition: "香蕉", example: "She peeled the banana and ate it." },
+            { word: "car", definition: "汽车", example: "My father drives a car to work." },
+            { word: "dog", definition: "狗", example: "The dog barked at the stranger." },
+            { word: "elephant", definition: "大象", example: "Elephants have long trunks." },
+            { word: "fish", definition: "鱼", example: "We saw many colorful fish in the aquarium." },
+            { word: "guitar", definition: "吉他", example: "He plays the guitar very well." },
+            { word: "house", definition: "房子", example: "They live in a big house." },
+            { word: "ice", definition: "冰", example: "Put some ice in my drink, please." },
+            { word: "jungle", definition: "丛林", example: "Tigers live in the jungle." },
+            { word: "kite", definition: "风筝", example: "We flew a kite in the park." },
+            { word: "lake", definition: "湖", example: "There is a beautiful lake in the park." },
+            { word: "mountain", definition: "山", example: "We climbed the mountain last summer." },
+            { word: "night", definition: "夜晚", example: "I like to look at the stars at night." },
+            { word: "ocean", definition: "海洋", example: "The ocean is very deep." },
+            { word: "pen", definition: "钢笔", example: "Please give me a pen to write with." },
+            { word: "queen", definition: "女王", example: "The queen lives in a palace." },
+            { word: "river", definition: "河流", example: "A river flows through the city." },
+            { word: "sun", definition: "太阳", example: "The sun rises in the east." },
+            { word: "tree", definition: "树", example: "There are many trees in the forest." },
+            { word: "umbrella", definition: "雨伞", example: "Take an umbrella. It's raining." },
+            { word: "violin", definition: "小提琴", example: "She plays the violin in an orchestra." },
+            { word: "water", definition: "水", example: "We need to drink plenty of water." },
+            { word: "xylophone", definition: "木琴", example: "The child played the xylophone." },
+            { word: "yellow", definition: "黄色", example: "Her favorite color is yellow." },
+            { word: "zoo", definition: "动物园", example: "We went to the zoo to see the animals." },
+            { word: "aberration", definition: "偏差，脱离常轨", example: "His behavior was an aberration from his usual calm self." },
+            { word: "abjure", definition: "发誓放弃，宣誓弃绝", example: "He abjured his former beliefs." },
+            { word: "ablution", definition: "沐浴，净身", example: "Muslims perform ablutions before prayer." },
+            { word: "abnegation", definition: "放弃，克制", example: "Her abnegation of personal desires impressed everyone." },
+            { word: "abominate", definition: "痛恨，憎恶", example: "I abominate cruelty to animals." },
+            { word: "aboriginal", definition: "土著的，原始的", example: "Aboriginal art has a long history." },
+            { word: "abortive", definition: "失败的，流产的", example: "The abortive attempt was a waste of resources." },
+            { word: "abrade", definition: "磨损，擦伤", example: "His skin was abraded by the rough surface." },
+            { word: "abrogate", definition: "废除，取消", example: "The law was abrogated due to public opposition." },
+            { word: "abstemious", definition: "节制的，节俭的", example: "He led an abstemious life." },
+            { word: "abstruse", definition: "深奥的，晦涩的", example: "The professor's lecture was too abstruse for most students." },
+            { word: "accede", definition: "同意，加入", example: "They finally acceded to our demands." },
+            { word: "accolade", definition: "荣誉，赞扬", example: "The novel received many accolades." },
+            { word: "accrete", definition: "增长，依附", example: "Layers of sediment accreted over time." },
+            { word: "acerbic", definition: "尖刻的，酸的", example: "She gave an acerbic reply to his question." },
+            { word: "acme", definition: "顶点，极致", example: "This painting represents the acme of his career." },
+            { word: "acquiesce", definition: "默许，顺从", example: "She acquiesced to the decision without protest." },
+            { word: "acrid", definition: "辛辣的，刺鼻的", example: "The acrid smoke made us cough." },
+            { word: "acrimonious", definition: "激烈的，尖刻的", example: "They had an acrimonious debate about politics." },
+            { word: "acumen", definition: "敏锐，精明", example: "His business acumen made him successful." },
+            { word: "adage", definition: "谚语，格言", example: "As the adage goes, 'Practice makes perfect.'" },
+            { word: "adamant", definition: "坚定的，固执的", example: "He was adamant about not changing his mind." },
+            { word: "addle", definition: "使糊涂，使混乱", example: "Too much information addled his brain." },
+            { word: "adept", definition: "熟练的，内行的", example: "She is adept at solving problems." },
+            { word: "admonish", definition: "告诫，责备", example: "The teacher admonished the students for being late." },
+            { word: "adulterate", definition: "掺假，掺杂", example: "They were caught trying to adulterate the milk." }
+        ];
+
+        // 游戏状态
+        let gameState = {
+            words: words,           // 使用合并后的单词库
+            shuffledWords: [],      // 打乱顺序的单词
+            currentWordIndex: 0,    // 当前单词索引
+            startTime: 0,           // 开始时间
+            endTime: 0,             // 结束时间
+            correctCount: 0,        // 正确拼写数量
+            totalCount: 0,          // 总尝试数量
+            totalTime: 0,           // 总用时
+            isChecking: false,      // 是否正在检查
+        };
+
+        // DOM 元素
+        const gameStartScreen = document.getElementById('gameStartScreen');
+        const gamePlayScreen = document.getElementById('gamePlayScreen');
+        const gameEndScreen = document.getElementById('gameEndScreen');
+        const wordHint = document.getElementById('wordHint');
+        const wordInput = document.getElementById('wordInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const timer = document.getElementById('timer');
+        const roundCounter = document.getElementById('roundCounter');
+        const feedback = document.getElementById('feedback');
+        const correctFeedback = document.getElementById('correctFeedback');
+        const wrongFeedback = document.getElementById('wrongFeedback');
+        const timeTaken = document.getElementById('timeTaken');
+        const correctAnswer = document.getElementById('correctAnswer');
+        const wordInfo = document.getElementById('wordInfo');
+        const wordDefinition = document.getElementById('wordDefinition');
+        const wordExample = document.getElementById('wordExample');
+        const startBtn = document.getElementById('startBtn'); // 新增开始按钮
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const currentLevel = document.getElementById('currentLevel');
+        const accuracyRate = document.getElementById('accuracyRate');
+        const avgTime = document.getElementById('avgTime');
+        const totalWords = document.getElementById('totalWords');
+        const correctWords = document.getElementById('correctWords');
+        const finalAvgTime = document.getElementById('finalAvgTime');
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeHelpBtn = document.getElementById('closeHelpBtn');
+        const gotItBtn = document.getElementById('gotItBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const navbar = document.getElementById('navbar');
+
+        // 显示帮助模态框
+        helpBtn.addEventListener('click', () => {
+            helpModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        });
+
+        // 关闭帮助模态框
+        function closeHelpModal() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                helpModal.classList.add('hidden');
+            }, 300);
+        }
+
+        closeHelpBtn.addEventListener('click', closeHelpModal);
+        gotItBtn.addEventListener('click', closeHelpModal);
+
+        // 导航栏滚动效果
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 10) {
+                navbar.classList.add('shadow-md');
+                navbar.classList.add('py-2');
+                navbar.classList.remove('py-3');
+            } else {
+                navbar.classList.remove('shadow-md');
+                navbar.classList.add('py-3');
+                navbar.classList.remove('py-2');
+            }
+        });
+
+        // 开始游戏
+        startBtn.addEventListener('click', () => {
+            startGame();
+        });
+
+        // 再玩一次
+        playAgainBtn.addEventListener('click', () => {
+            startGame();
+        });
+
+        // 分享成绩
+        shareBtn.addEventListener('click', () => {
+            alert('成绩分享功能已复制到剪贴板！');
+        });
+
+        // 提交答案
+        submitBtn.addEventListener('click', checkAnswer);
+
+        // 按下Enter键提交答案
+        wordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        // 下一个单词
+        nextBtn.addEventListener('click', nextWord);
+
+        // 跳过单词
+        skipBtn.addEventListener('click', () => {
+            nextWord();
+        });
+
+        // 开始游戏
+        function startGame() {
+            // 重置游戏状态
+            gameState = {
+                words: words,
+                shuffledWords: [...words].sort(() => Math.random() - 0.5),
+                currentWordIndex: 0,
+                startTime: 0,
+                endTime: 0,
+                correctCount: 0,
+                totalCount: 0,
+                totalTime: 0,
+                isChecking: false,
+            };
+
+            // 更新UI
+            gameStartScreen.classList.add('hidden');
+            gameEndScreen.classList.add('hidden');
+            gamePlayScreen.classList.remove('hidden');
+            
+            // 更新游戏信息面板
+            currentLevel.textContent = '学习者';
+            accuracyRate.textContent = '0%';
+            avgTime.textContent = '0.0秒';
+            progressBar.style.width = '0%';
+            progressText.textContent = '0/' + gameState.shuffledWords.length;
+            
+            // 显示第一个单词
+            showWord();
+        }
+
+        // 显示单词
+        function showWord() {
+            if (gameState.currentWordIndex >= gameState.shuffledWords.length) {
+                endGame();
+                return;
+            }
+            
+            // 获取当前单词
+            const currentWord = gameState.shuffledWords[gameState.currentWordIndex];
+            
+            // 更新UI - 显示单词的部分字母
+            wordHint.textContent = currentWord.word;
+            wordInput.value = '';
+            wordInput.focus();
+            timer.textContent = '0.0秒';
+            roundCounter.textContent = `第 ${gameState.currentWordIndex + 1} 轮`;
+            
+            // 隐藏反馈和单词信息
+            feedback.classList.add('hidden');
+            correctFeedback.classList.add('hidden');
+            wrongFeedback.classList.add('hidden');
+            wordInfo.classList.add('hidden');
+            
+            // 启用提交按钮
+            submitBtn.disabled = false;
+            
+            // 开始计时
+            gameState.startTime = Date.now();
+            
+            // 启动计时器更新
+            const timerInterval = setInterval(() => {
+                const elapsedTime = (Date.now() - gameState.startTime) / 1000;
+                timer.textContent = elapsedTime.toFixed(1) + '秒';
+                
+                // 如果单词已经检查过，停止计时器
+                if (gameState.isChecking) {
+                    clearInterval(timerInterval);
+                }
+            }, 100);
+        }
+
+        // 检查答案
+        function checkAnswer() {
+            if (gameState.isChecking) return;
+            
+            gameState.isChecking = true;
+            submitBtn.disabled = true;
+            
+            const currentWord = gameState.shuffledWords[gameState.currentWordIndex];
+            const userInput = wordInput.value.trim().toLowerCase();
+            
+            // 停止计时
+            gameState.endTime = Date.now();
+            const elapsedTime = (gameState.endTime - gameState.startTime) / 1000;
+            
+            // 更新总尝试次数和总用时
+            gameState.totalCount++;
+            gameState.totalTime += elapsedTime;
+            
+            // 显示反馈
+            feedback.classList.remove('hidden');
+            
+            if (userInput === currentWord.word) {
+                // 回答正确
+                gameState.correctCount++;
+                
+                correctFeedback.classList.remove('hidden');
+                timeTaken.textContent = `用时：${elapsedTime.toFixed(1)}秒`;
+                
+                // 显示单词信息
+                wordInfo.classList.remove('hidden');
+                wordDefinition.textContent = currentWord.definition;
+                wordExample.textContent = `"${currentWord.example}"`;
+                
+                // 添加正确动画
+                wordHint.classList.add('text-success');
+                wordHint.classList.add('animate-bounce-in');
+                
+                // 更新游戏统计
+                updateGameStats();
+            } else {
+                // 回答错误
+                wrongFeedback.classList.remove('hidden');
+                correctAnswer.textContent = currentWord.word;
+                
+                // 添加错误动画
+                wordHint.classList.add('text-danger');
+                wordHint.classList.add('animate-bounce-in');
+            }
+            
+            // 显示下一个按钮
+            nextBtn.classList.remove('hidden');
+            
+            // 延迟后重置动画类
+            setTimeout(() => {
+                wordHint.classList.remove('animate-bounce-in');
+                wordHint.classList.remove('text-success', 'text-danger');
+            }, 1000);
+        }
+
+        // 下一个单词
+        function nextWord() {
+            gameState.isChecking = false;
+            nextBtn.classList.add('hidden');
+            gameState.currentWordIndex++;
+            
+            // 更新进度条
+            const progress = (gameState.currentWordIndex / gameState.shuffledWords.length) * 100;
+            progressBar.style.width = progress + '%';
+            progressText.textContent = gameState.currentWordIndex + '/' + gameState.shuffledWords.length;
+            
+            // 显示下一个单词
+            showWord();
+        }
+
+        // 结束游戏
+        function endGame() {
+            gamePlayScreen.classList.add('hidden');
+            gameEndScreen.classList.remove('hidden');
+            
+            // 计算最终统计
+            const accuracy = gameState.totalCount > 0 ? Math.round((gameState.correctCount / gameState.totalCount) * 100) : 0;
+            const avgTimePerWord = gameState.correctCount > 0 ? (gameState.totalTime / gameState.correctCount).toFixed(1) : 0;
+            
+            // 更新UI
+            totalWords.textContent = gameState.shuffledWords.length;
+            correctWords.textContent = gameState.correctCount;
+            finalAvgTime.textContent = avgTimePerWord + '秒';
+        }
+
+        // 更新游戏统计
+        function updateGameStats() {
+            const accuracy = gameState.totalCount > 0 ? Math.round((gameState.correctCount / gameState.totalCount) * 100) : 0;
+            const avgTimePerWord = gameState.correctCount > 0 ? (gameState.totalTime / gameState.correctCount).toFixed(1) : 0;
+            
+            accuracyRate.textContent = accuracy + '%';
+            avgTime.textContent = avgTimePerWord + '秒';
+            
+            // 根据正确率更新等级
+            if (accuracy >= 90) {
+                currentLevel.textContent = '专家';
+            } else if (accuracy >= 70) {
+                currentLevel.textContent = '高级';
+            } else if (accuracy >= 50) {
+                currentLevel.textContent = '中级';
+            } else {
+                currentLevel.textContent = '初学者';
+            }
+        }
+
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            // 合并简单和困难单词库
+            gameState.words = [...easyWords, ...hardWords];
+        });
+    </script>
+</body>
+</html>
